@@ -94,43 +94,7 @@ src/
 
 ---
 
-## 5. 功能需求
-
-### 5.1 目标与阈值
-
-| 类型 | 丢失阈值 | 额外行为 |
-| --- | --- | --- |
-| 普通装甲 | 连续 3 帧未观测到 → `LOST` | 按 x/y 速度预测位置；无角度预测 |
-| 旋转装甲 | 连续 5 帧未观测到 → `LOST` | 按 x/y 速度预测位置；`TRACK` 时按角速度预测角度 |
-
-- 记当前帧时间戳为 `t_ns`，上一成功帧为 `t_prev_ns`，帧间隔 `dt = (t_ns - t_prev_ns) / 1e9` 秒；目标距上次观测的时间差为 `dt_obs = (t_ns - 上次观测时间戳) / 1e9` 秒。首帧的 `dt` 取 0。
-- x/y 速度 = （本次坐标 − 上次观测坐标）/ `dt_obs`，单位 m/s；角速度 = （本次角度 − 上次角度）/ `dt_obs`，单位 °/s。`dt_obs` 必须大于 0。
-- 坐标单位为 m，角度单位为度；不做单位换算。速度单位是 m/s，角速度单位是 °/s。
-- 预测公式中的 `dt` 是当前成功帧的帧间隔，不是目标自己的 `dt_obs`。
-- 本帧观测到 `TRACK` 目标时，按 `predicted_x = x + velocity_x * dt`、`predicted_y = y + velocity_y * dt` 计算；本帧未观测且仍为 `TRACK` 时，在上一帧预测值上继续累加：`predicted_x += velocity_x * dt`、`predicted_y += velocity_y * dt`，未观测期间速度保持最后一次观测值不变。预测值只写入 `predicted_*`，不覆盖当前 `x` / `y`。
-- 旋转装甲在 `TRACK` 时：本帧观测到时，先用 `dt_obs` 更新 `angular_velocity`，再计算 `predicted_angle = angle + angular_velocity * dt`；本帧未观测到且仍为 `TRACK` 时，先执行 `angle += angular_velocity * dt`，再计算 `predicted_angle = angle + angular_velocity * dt`；达到丢失阈值的那一帧不再推进。进入 `LOST` 后停止位置和角度预测，并将 `x`、`y`、`angle`、`velocity_x`、`velocity_y`、`angular_velocity`、`predicted_x`、`predicted_y`、`predicted_angle` 全部清零。
-- 从 `LOST` 重新追踪的第一帧，状态回到 `TRACK`，`missed_count` 清零，位置和角度更新，速度（x/y 与角度）清零（不按本次与上次观测的差值计算），`predicted_*` 等于当前观测值；之后按相邻观测的时间差更新。
-
-### 5.2 整帧校验与目标创建
-
-以下情况必须**整帧拒绝**，且不修改任何目标、不更新最近成功帧号和时间戳：
-
-1. `frame_id` 不大于最近一次成功处理的帧号（包括相等）；
-2. `timestamp_ns` 不大于最近一次成功处理的帧时间戳（包括相等）；
-3. 观测中存在负数目标编号；
-4. 同一帧内目标编号重复；
-5. 观测类型与已创建目标的类型不一致：编号的类型在首次创建时确定，后续帧不得改变；类型决定丢失阈值和角度预测行为，例如 1 已按 `ARMOR` 创建，后续又被报成 `SPINNING`，应整帧拒绝。
-
-开始时目标管理器内无目标。每帧通过整帧校验后，按第 6 节的顺序处理观测。
-
-### 5.3 丢失与重新追踪
-
-- `LOST` 目标不能从容器移除：测试帧 13 和 21 依赖目标在 `LOST` 后重新追踪。
-- `LOST` 后 `missed_count` 是否继续递增由实现自行决定，不作为验收条件；目标重新被观测时清零。
-
----
-
-## 6. 程序流程
+## 5. 程序流程
 
 程序的入口在 `src/main.cpp`：
 
@@ -157,6 +121,42 @@ rm::Result onFrame(const rm::InputFrame& frame);
 5. 遍历观测：已创建目标更新位置和状态，`missed_count` 置 0；旋转装甲更新角度，普通装甲角度保持 0；若上一帧为 `TRACK`，按观测时间差更新 x/y 速度和 `angular_velocity`，再按当前帧间隔计算预测值；若上一帧为 `LOST`，按重新追踪处理，不做差值计算，速度置 0、`predicted_*` 取本次观测；此前未创建过的编号新增目标（状态 `TRACK`、`missed_count=0`，类型、位置取本帧观测，旋转装甲角度取观测、普通装甲角度为 0，x/y 速度与角速度均为 0，预测值等于观测值）；
 6. 遍历本帧未被观测的目标：仍为 `TRACK` 的目标 `missed_count++`；未达到阈值时，`predicted_x` / `predicted_y` 和旋转装甲的 `angle` 按帧间隔继续推进；达到阈值则转为 `LOST` 并清零位置、角度、速度和预测值；已处于 `LOST` 的目标是否继续增加 `missed_count` 由实现自行决定；
 7. 统计 `TRACK` / `LOST` 数量以及 `ARMOR` / `SPINNING` 类型数量，构造 `accepted=true` 的 `Result`。
+
+---
+
+## 6. 功能需求
+
+### 6.1 目标与阈值
+
+| 类型 | 丢失阈值 | 额外行为 |
+| --- | --- | --- |
+| 普通装甲 | 连续 3 帧未观测到 → `LOST` | 按 x/y 速度预测位置；无角度预测 |
+| 旋转装甲 | 连续 5 帧未观测到 → `LOST` | 按 x/y 速度预测位置；`TRACK` 时按角速度预测角度 |
+
+- 记当前帧时间戳为 `t_ns`，上一成功帧为 `t_prev_ns`，帧间隔 `dt = (t_ns - t_prev_ns) / 1e9` 秒；目标距上次观测的时间差为 `dt_obs = (t_ns - 上次观测时间戳) / 1e9` 秒。首帧的 `dt` 取 0。
+- x/y 速度 = （本次坐标 − 上次观测坐标）/ `dt_obs`，单位 m/s；角速度 = （本次角度 − 上次角度）/ `dt_obs`，单位 °/s。`dt_obs` 必须大于 0。
+- 坐标单位为 m，角度单位为度；不做单位换算。速度单位是 m/s，角速度单位是 °/s。
+- 预测公式中的 `dt` 是当前成功帧的帧间隔，不是目标自己的 `dt_obs`。
+- 本帧观测到 `TRACK` 目标时，按 `predicted_x = x + velocity_x * dt`、`predicted_y = y + velocity_y * dt` 计算；本帧未观测且仍为 `TRACK` 时，在上一帧预测值上继续累加：`predicted_x += velocity_x * dt`、`predicted_y += velocity_y * dt`，未观测期间速度保持最后一次观测值不变。预测值只写入 `predicted_*`，不覆盖当前 `x` / `y`。
+- 旋转装甲在 `TRACK` 时：本帧观测到时，先用 `dt_obs` 更新 `angular_velocity`，再计算 `predicted_angle = angle + angular_velocity * dt`；本帧未观测到且仍为 `TRACK` 时，先执行 `angle += angular_velocity * dt`，再计算 `predicted_angle = angle + angular_velocity * dt`；达到丢失阈值的那一帧不再推进。进入 `LOST` 后停止位置和角度预测，并将 `x`、`y`、`angle`、`velocity_x`、`velocity_y`、`angular_velocity`、`predicted_x`、`predicted_y`、`predicted_angle` 全部清零。
+- 从 `LOST` 重新追踪的第一帧，状态回到 `TRACK`，`missed_count` 清零，位置和角度更新，速度（x/y 与角度）清零（不按本次与上次观测的差值计算），`predicted_*` 等于当前观测值；之后按相邻观测的时间差更新。
+
+### 6.2 整帧校验与目标创建
+
+以下情况必须**整帧拒绝**，且不修改任何目标、不更新最近成功帧号和时间戳：
+
+1. `frame_id` 不大于最近一次成功处理的帧号（包括相等）；
+2. `timestamp_ns` 不大于最近一次成功处理的帧时间戳（包括相等）；
+3. 观测中存在负数目标编号；
+4. 同一帧内目标编号重复；
+5. 观测类型与已创建目标的类型不一致：编号的类型在首次创建时确定，后续帧不得改变；类型决定丢失阈值和角度预测行为，例如 1 已按 `ARMOR` 创建，后续又被报成 `SPINNING`，应整帧拒绝。
+
+开始时目标管理器内无目标。每帧通过整帧校验后，按第 5 节的顺序处理观测。
+
+### 6.3 丢失与重新追踪
+
+- `LOST` 目标不能从容器移除：测试帧 13 和 21 依赖目标在 `LOST` 后重新追踪。
+- `LOST` 后 `missed_count` 是否继续递增由实现自行决定，不作为验收条件；目标重新被观测时清零。
 
 ---
 
@@ -273,7 +273,7 @@ id=<编号> type=<0|1> status=<0|1> position=(<x>,<y>|--,--) velocity=(<vx>,<vy>
 - 从目标进入 `LOST` 的那一帧开始计数，连续 10 帧仍为 `LOST` 时，将目标从容器中删除；
 - 删除后当前目标对象数减一；之后再次观测到同一编号时，按新目标创建；
 - 只在整帧校验通过后的逐帧处理中删除；被拒绝的帧不改变计数或容器；
-- 本附加项与 5.3 的基础保留规则冲突，仅在启用时覆盖。
+- 本附加项与 6.3 的基础保留规则冲突，仅在启用时覆盖。
 
 启用后，测试帧中的目标 2 在第 6 帧进入 `LOST`，第 15 帧处理完时达到连续 10 帧 `LOST` 并被删除；第 21 帧观测到的 2 将作为新目标创建，而不是重新追踪旧目标，相关验收预期需相应调整。
 
