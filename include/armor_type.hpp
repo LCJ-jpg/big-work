@@ -6,23 +6,19 @@
 using namespace rm;
 class armor_type : public the_base
 {
-private :
 public :
-{
-    if(get_status == lost)
+    void track()
     {
-        if(add() >= 3)
+        if(get_status() == rm::TargetStatus::LOST)
         {
-            clear_shot();
+            if(add() >= 3)
+            {
+                clear_shot();
+            }
+        }
+        else
+        {
+            c0();
         }
     }
-    else
-    {
-        c0();
-    }
-}
-
-
-
-
-}
+};

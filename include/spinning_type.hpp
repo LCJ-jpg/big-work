@@ -4,25 +4,21 @@
 #include "the_base.hpp"
 
 using namespace rm;
-class spinnung_type : public the_base
+class spinning_type : public the_base
 {
-private :
 public :
-{
-    if(get_status == lost)
+    void track()
     {
-        if(add() >= 5)
+        if(get_status() == rm::TargetStatus::LOST)
         {
-            clear_shot();
+            if(add() >= 5)
+            {
+                clear_shot();
+            }
+        }
+        else
+        {
+            c0();
         }
     }
-    else
-    {
-        c0();
-    }
-}
-
-
-
-
-}
+};
