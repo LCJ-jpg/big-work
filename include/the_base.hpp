@@ -80,7 +80,7 @@ public:
         _pre.angle = 0.0;
         _pre.angular_velocity = 0.0;
         _pre.predicted_angle = 0.0;
-        this->TargetStatus _status = rm::TargetStatus::LOST;
+        this->_status = rm::TargetStatus::LOST;
     }
     int add()
     {

@@ -73,7 +73,7 @@ public:
             {
                 if(judge == true)
                 {
-                    if(the_see.type == 0)
+                    if(the_see.type == rm::TargetType::ARMOR)
                     {
                         armor_type* i = new armor_type(the_see.id,the_see.type);
                         i->update(the_see);
@@ -81,7 +81,7 @@ public:
                         all_armor.push_back(i);
                         out = true;
                     }
-                    if(the_see.type == 1)
+                    if(the_see.type == rm::TargetType::SPINNING)
                     {
                         spinning_type* i = new spinning_type(the_see.id,the_see.type);
                         i->update(the_see);
@@ -123,7 +123,7 @@ public:
             int spin_cnt = all_spin.size();
             for(const the_base* t : all_targets)
             {
-                if(t.status == 0)
+                if(t->status == 0)
                 {
                     lost_cnt++;
                 }
@@ -131,14 +131,14 @@ public:
                 {
                     track_cnt++;
                 }
-                _res.targets.push_back(t._pre)
+                _res.targets.push_back(t->_pre)
             }
-            _pre.accepted = true;
-            _pre.frame_id = suc_frame.frame_id;
-            _pre.tracking_target_count = track_cnt;
-            _pre.lost_target_count = lost_cnt;
-            _pre.armor_target_count = armor_cnt;
-            _pre.spinning_target_count = spin_cnt ;
+            _res.accepted = true;
+            _res.frame_id = suc_frame.frame_id;
+            _res.tracking_target_count = track_cnt;
+            _res.lost_target_count = lost_cnt;
+            _res.armor_target_count = armor_cnt;
+            _res.spinning_target_count = spin_cnt ;
 
         }
         else
