@@ -121,9 +121,9 @@ public:
             int lost_cnt = 0;
             int armor_cnt = all_armor.size();
             int spin_cnt = all_spin.size();
-            for(const the_base* t : all_targets)
+            for(the_base* t : all_targets)
             {
-                if(t->status == 0)
+                if(t->get_status() == rm::TargetStatus::LOST)
                 {
                     lost_cnt++;
                 }
@@ -131,7 +131,7 @@ public:
                 {
                     track_cnt++;
                 }
-                _res.targets.push_back(t->_pre)
+                _res.targets.push_back(t->get_shot());
             }
             _res.accepted = true;
             _res.frame_id = suc_frame.frame_id;

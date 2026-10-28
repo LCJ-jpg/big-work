@@ -7,6 +7,8 @@ using namespace rm;
 class spinning_type : public the_base
 {
 public :
+    spinning_type(int base_id,TargetType _armor) : the_base(base_id , _armor)
+    {}
     void track()
     {
         if(get_status() == rm::TargetStatus::LOST)

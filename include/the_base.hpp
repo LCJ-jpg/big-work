@@ -31,7 +31,7 @@ public:
         c0();
     }
     virtual ~the_base() = default;
-    virtual track() {};
+    virtual void track() {};
     void compute (int64_t t_ns,int64_t time = 0)//输入观测时间，
     {
         if(time != 0)
