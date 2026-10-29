@@ -65,7 +65,8 @@ public:
         {
             this->_pre.predicted_x += this->_pre.velocity_x * dt;
             this->_pre.predicted_y += this->_pre.velocity_y * dt;
-            this->_pre.predicted_angle += dt * this->_pre.angular_velocity;
+            _pre.angle += _pre.angular_velocity * dt;
+            this->_pre.predicted_angle = _pre.angle + dt * this->_pre.angular_velocity;
         }
     }
     TargetSnapshot get_shot()

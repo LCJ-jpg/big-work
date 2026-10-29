@@ -53,6 +53,23 @@ public:
                 }                 
             }
         }//类型不匹配
+        double dt = ( next_frame.timestamp_ns - suc_frame.timestamp_ns ) / 1e9;
+        for (the_base* t : all_targets)
+        {
+            bool whether_see = false; 
+            for(int i = 0;i < tem.size();i++)
+            {
+                if(tem[i] == t->get_base_id())
+                {
+                    whether_see = true;
+                    break;
+                }
+            }
+            if(!whether_see)
+            {
+                t->track();
+            }
+        }
         for (const auto &the_see : next_frame.observations)
         {
             bool judge = true;
@@ -83,25 +100,10 @@ public:
                 }            
             }
         }//看到的更新，没看到在下方
-        double dt = ( next_frame.timestamp_ns - suc_frame.timestamp_ns ) / 1e9;
         for (the_base* t : all_targets)
         {
             t->compute(dt);
-            bool whether_see = false; 
-            for(int i = 0;i < tem.size();i++)
-            {
-                if(tem[i] == t->get_base_id())
-                {
-                    whether_see = true;
-                    break;
-                }
-            }
-            if(!whether_see)
-            {
-                t->track();
-            }
         }
-
         return true;
     }
     bool base_judge()//判断时间与帧id
@@ -152,6 +154,7 @@ public:
         else
         {
             this->_res.accepted = false;
+            this->_res.frame_id = this->next_frame.frame_id;
         }
     }
     Result onFrame(const InputFrame &frame)
