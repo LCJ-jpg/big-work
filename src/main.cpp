@@ -90,13 +90,7 @@ int main()
 
     for (const auto &frame : testFrames())
     {
-        target_manager.get_frame(frame);
-        target_manager.change_res();
         rm::Result result = target_manager.onFrame(frame);
-        target_manager.base_judge();
-        target_manager.find_target();
-        target_manager.change_res();
-
         printResult(result); // 用于输出结果的函数
     }
     return 0;

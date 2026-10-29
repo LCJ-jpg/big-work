@@ -11,16 +11,10 @@ public :
     {}
     void track()
     {
-        if(get_status() == rm::TargetStatus::LOST)
+        int i = add();
+        if(i >= 3)
         {
-            if(add() >= 3)
-            {
-                clear_shot();
-            }
-        }
-        else
-        {
-            c0();
-        }
+            change_status();
+        }   
     }
 };
