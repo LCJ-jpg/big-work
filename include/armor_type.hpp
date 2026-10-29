@@ -14,7 +14,7 @@ public :
         int i = add();
         if(i >= 3)
         {
-            change_status();
+            clear_shot();
         }   
     }
 };

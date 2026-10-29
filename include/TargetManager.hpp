@@ -11,9 +11,8 @@ class TargetManager
 {
 private:
     InputFrame next_frame;
-    InputFrame suc_frame = {-1,0,{}};
+    InputFrame suc_frame = {-1,-1,{}};
     Result _res = {false,suc_frame.frame_id,{},0,0,0,0};
-    double t_ns = 0, t_prev_ns, dt;   //当前，上一个成功，时间差
     std::vector<the_base*> all_targets;
     std::vector<armor_type*> all_armor;
     std::vector<spinning_type*> all_spin;
@@ -84,14 +83,14 @@ public:
                 }            
             }
         }//看到的更新，没看到在下方
-        double dt = next_frame.timestamp_ns - suc_frame.timestamp_ns;
+        double dt = ( next_frame.timestamp_ns - suc_frame.timestamp_ns ) / 1e9;
         for (the_base* t : all_targets)
         {
             t->compute(dt);
             bool whether_see = false; 
             for(int i = 0;i < tem.size();i++)
             {
-                if(tem[i] == t->get_base_id());
+                if(tem[i] == t->get_base_id())
                 {
                     whether_see = true;
                     break;
@@ -158,7 +157,6 @@ public:
     Result onFrame(const InputFrame &frame)
     {
         get_frame(frame);
-        find_target();
         change_res();
     // 占位行为：不做处理，返回"本帧未接受"
     return _res;

@@ -37,16 +37,17 @@ public:
         _pre.x = _see.x;
         _pre.y = _see.y;
         _pre.angle = _see.angle;  
-        last_time = t_ns;     
+             
         //这里在有上次观测后才会开始计算 
         double dt_obs;
-        if(last_time > 0)
+        if(last_time >= 0)
         {
-            dt_obs = t_ns - last_time;
+            dt_obs = ( t_ns - last_time ) / 1e9;
             _pre.velocity_x = (_pre.x - last_see.x)/dt_obs;
             _pre.velocity_y = (_pre.y - last_see.y)/dt_obs;
             _pre.angular_velocity = (_pre.angle - last_see.angle)/dt_obs;
-        } 
+        }
+        last_time = t_ns;
         c0();
     }
     virtual ~the_base() = default;
@@ -54,9 +55,18 @@ public:
     //这个函数叫预测函数更好
     void compute (double dt)//输入观测时间，
     {
-        this->_pre.predicted_x = this->_pre.velocity_x * dt + this->_pre.x;
-        this->_pre.predicted_y = this->_pre.velocity_y * dt + this->_pre.y;
-        this->_pre.predicted_angle = this->_pre.angle + dt * this->_pre.angular_velocity;
+        if(_pre.missed_count == 0)
+        {
+            this->_pre.predicted_x = this->_pre.velocity_x * dt + this->_pre.x;
+            this->_pre.predicted_y = this->_pre.velocity_y * dt + this->_pre.y;
+            this->_pre.predicted_angle = this->_pre.angle + dt * this->_pre.angular_velocity;
+        }
+        else
+        {
+            this->_pre.predicted_x += this->_pre.velocity_x * dt;
+            this->_pre.predicted_y += this->_pre.velocity_y * dt;
+            this->_pre.predicted_angle += dt * this->_pre.angular_velocity;
+        }
     }
     TargetSnapshot get_shot()
     {
@@ -88,6 +98,7 @@ public:
         _pre.predicted_angle = 0.0;
         this->_status = rm::TargetStatus::LOST;
         _pre.status = this->_status;
+        last_time = -1; 
     }//数据清零
     int add()
     {
@@ -97,10 +108,5 @@ public:
     void c0()
     {
         _pre.missed_count = 0;
-    }//看见的清零
-    void change_status()
-    {
-        _status = rm::TargetStatus::LOST;
     }
-
 };
