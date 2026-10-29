@@ -99,7 +99,7 @@ public:
                     all_spin.push_back(i);
                 }            
             }
-        }//看到的更新，没看到在下方
+        }//预测 
         for (the_base* t : all_targets)
         {
             t->compute(dt);
@@ -124,14 +124,12 @@ public:
     }
     void change_res()//对将要输出的_res做更改
     {        
-        if(base_judge() && find_target())
+        if(find_target())
         {
             update_suc();
             _res.targets.clear();
             int track_cnt = 0;
             int lost_cnt = 0;
-            int armor_cnt = all_armor.size();
-            int spin_cnt = all_spin.size();
             for(the_base* t : all_targets)
             {
                 if(t->get_status() == rm::TargetStatus::LOST)
@@ -148,8 +146,8 @@ public:
             _res.frame_id = suc_frame.frame_id;
             _res.tracking_target_count = track_cnt;
             _res.lost_target_count = lost_cnt;
-            _res.armor_target_count = armor_cnt;
-            _res.spinning_target_count = spin_cnt ;
+            _res.armor_target_count = all_armor.size();
+            _res.spinning_target_count = all_spin.size();
         }
         else
         {
