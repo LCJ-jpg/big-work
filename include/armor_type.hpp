@@ -11,6 +11,7 @@ public :
     {}
     void track()
     {
+        static int cnt = 0;
         int i = add();
         if(i >= 3)
         {

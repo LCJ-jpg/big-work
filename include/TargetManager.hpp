@@ -15,7 +15,7 @@ private:
     InputFrame suc_frame = {-1,-1,{}};
     Result _res = {false,suc_frame.frame_id,{},0,0,0,0};
     std::vector<std::shared_ptr<the_base>> all_targets;
-    std::vector<std::shared_ptr<armor_type>> all_armor;
+    std::vector<std::shared_ptr<armor_type>> all_armor;//这里可以使用static关键字，不使用数组，方便删除目标的操作
     std::vector<std::shared_ptr<spinning_type>> all_spin;//智能指针防止new之后内存泄漏，不用unique——ptr因为不方便放入数组
 public:
     void get_frame(const InputFrame &a_frame)//录入帧

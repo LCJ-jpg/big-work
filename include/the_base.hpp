@@ -51,7 +51,7 @@ public:
         c0();
     }
     virtual ~the_base() = default;
-    virtual void track() {};
+    virtual bool track() {};
     //这个函数叫预测函数更好
     void compute (double dt)//输入观测时间，
     {
