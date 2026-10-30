@@ -22,6 +22,7 @@ bool cmp (rm::TargetSnapshot a , rm::TargetSnapshot b)
     }
     return a.id < b.id;
 };
+
 using namespace rm;
 class TargetManager 
 {
@@ -55,35 +56,40 @@ public:
                 return false;
             }
         }//重复编号
+        std::vector<int> to_delete;        
         for (const auto &the_see : next_frame.observations)
         {
+            int x = -1;
             for (auto& t : all_targets)
             {
+                x++;
                 if(t->get_base_id() == the_see.id)
                 {
                     if(t->get_armor() != the_see.type)
                     {
-                        return false;
-                        // all_targets.erase(std::remove(all_targets.begin(), all_targets.end(), t), all_targets.end());//删掉他
-                        // switch (the_see.type)
-                        // {
-                        //     case rm::TargetType::ARMOR:
-                        //     all_armor--;
-                        //     break;
-                        //     case rm::TargetType::SPINNING:
-                        //     all_spin--;
-                        //     break;
-                        //     default : break;
-                        // }
+                        // return false;
+                        to_delete.push_back(x);                        
+                        switch (the_see.type)
+                        {
+                            case rm::TargetType::ARMOR:
+                            all_armor--;
+                            break;
+                            case rm::TargetType::SPINNING:
+                            all_spin--;
+                            break;
+                            default : break;
+                        }
+                        break;
                     }
-                }                 
+                }          
             }
         }//类型不匹配
         double dt = ( next_frame.timestamp_ns - suc_frame.timestamp_ns ) / 1e9;
-        std::vector<std::weak_ptr<the_base>> to_delete;
+        int x = -1;
         for (auto& t : all_targets)
-        {           
-            bool whether_see = false; 
+        {          
+            x++;
+            bool whether_see = false;             
             for(int i = 0;i < tem.size();i++)
             {
                 if(tem[i] == t->get_base_id())
@@ -96,20 +102,25 @@ public:
             {
                 if(t->track())
                 {
-                    // all_targets.erase(std::remove(all_targets.begin(), all_targets.end(), t), all_targets.end());//删掉他
-                    // switch (t->get_armor())
-                    //     {
-                    //         case rm::TargetType::ARMOR:
-                    //         all_armor--;
-                    //         break;
-                    //         case rm::TargetType::SPINNING:
-                    //         all_spin--;
-                    //         break;
-                    //         default : break;
-                    //     }
+                    to_delete.push_back(x);
+                    switch (t->get_armor())
+                        {
+                            case rm::TargetType::ARMOR:
+                            all_armor--;
+                            break;
+                            case rm::TargetType::SPINNING:
+                            all_spin--;
+                            break;
+                            default : break;
+                        }
                 }
             }
             
+        }
+        for(int a : to_delete)
+        {
+            auto i = all_targets.begin() + a;
+            all_targets.erase(i);
         }
         for (const auto &the_see : next_frame.observations)
         {
