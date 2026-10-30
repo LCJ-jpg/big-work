@@ -13,11 +13,11 @@ public :
     {
         static int cnt = 0;
         int i = add();
-        if(i >= 5)
+        if(i >= sp_lostline)
         {
             clear_shot();
             cnt++;
-            if(cnt >= 5)
+            if(cnt >= delete_line)
             {
                 return true;
             }

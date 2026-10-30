@@ -6,7 +6,22 @@
 #include "spinning_type.hpp"
 #include "algorithm"
 #include "memory"
-
+static int all_armor = 0;//全局常数使用static关键字
+static int all_spin = 0;
+bool cmp (rm::TargetSnapshot a , rm::TargetSnapshot b)
+{
+    double ad = ((a.x)*(a.x) +(a.y)*(a.y));
+    double bd = ((b.x)*(b.x) +(b.y)*(b.y));
+    if(a.status != b.status)
+    {
+        return a.status > b.status;
+    }
+    if(ad != bd)
+    {
+        return ad < bd;
+    }
+    return a.id < b.id;
+};
 using namespace rm;
 class TargetManager 
 {
@@ -14,9 +29,8 @@ private:
     InputFrame next_frame;
     InputFrame suc_frame = {-1,-1,{}};
     Result _res = {false,suc_frame.frame_id,{},0,0,0,0};
-    std::vector<std::shared_ptr<the_base>> all_targets;
-    std::vector<std::shared_ptr<armor_type>> all_armor;//这里可以使用static关键字，不使用数组，方便删除目标的操作
-    std::vector<std::shared_ptr<spinning_type>> all_spin;//智能指针防止new之后内存泄漏，不用unique——ptr因为不方便放入数组
+    std::vector<std::shared_ptr<the_base>> all_targets;//智能指针防止new之后内存泄漏，不用unique——ptr因为不方便放入数组
+    
 public:
     void get_frame(const InputFrame &a_frame)//录入帧
     {
@@ -50,13 +64,25 @@ public:
                     if(t->get_armor() != the_see.type)
                     {
                         return false;
+                        // all_targets.erase(std::remove(all_targets.begin(), all_targets.end(), t), all_targets.end());//删掉他
+                        // switch (the_see.type)
+                        // {
+                        //     case rm::TargetType::ARMOR:
+                        //     all_armor--;
+                        //     break;
+                        //     case rm::TargetType::SPINNING:
+                        //     all_spin--;
+                        //     break;
+                        //     default : break;
+                        // }
                     }
                 }                 
             }
         }//类型不匹配
         double dt = ( next_frame.timestamp_ns - suc_frame.timestamp_ns ) / 1e9;
+        std::vector<std::weak_ptr<the_base>> to_delete;
         for (auto& t : all_targets)
-        {
+        {           
             bool whether_see = false; 
             for(int i = 0;i < tem.size();i++)
             {
@@ -66,10 +92,24 @@ public:
                     break;
                 }
             }
-            if(!whether_see)
+            if(!whether_see)//观测判断删除
             {
-                t->track();
+                if(t->track())
+                {
+                    // all_targets.erase(std::remove(all_targets.begin(), all_targets.end(), t), all_targets.end());//删掉他
+                    // switch (t->get_armor())
+                    //     {
+                    //         case rm::TargetType::ARMOR:
+                    //         all_armor--;
+                    //         break;
+                    //         case rm::TargetType::SPINNING:
+                    //         all_spin--;
+                    //         break;
+                    //         default : break;
+                    //     }
+                }
             }
+            
         }
         for (const auto &the_see : next_frame.observations)
         {
@@ -90,14 +130,14 @@ public:
                     std::shared_ptr<armor_type> i (new armor_type(the_see.id,the_see.type));//防止内存泄漏
                     i->update(the_see , next_frame.timestamp_ns);
                     all_targets.push_back(i);
-                    all_armor.push_back(i);
+                    all_armor++;
                 }
                 if(the_see.type == rm::TargetType::SPINNING)
                 {
                     std::shared_ptr<spinning_type> i (new spinning_type(the_see.id,the_see.type));//防止内存泄漏
                     i->update(the_see , next_frame.timestamp_ns);
                     all_targets.push_back(i);
-                    all_spin.push_back(i);
+                    all_spin++;
                 }            
             }
         }//预测 
@@ -143,12 +183,13 @@ public:
                 }
                 _res.targets.push_back(t->get_shot());
             }
+            std::sort(_res.targets.begin() , _res.targets.end(),cmp);
             _res.accepted = true;
             _res.frame_id = suc_frame.frame_id;
             _res.tracking_target_count = track_cnt;
             _res.lost_target_count = lost_cnt;
-            _res.armor_target_count = all_armor.size();
-            _res.spinning_target_count = all_spin.size();
+            _res.armor_target_count = all_armor;
+            _res.spinning_target_count = all_spin;
         }
         else
         {

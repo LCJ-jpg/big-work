@@ -1,8 +1,13 @@
 #pragma once
 
 #include "test_frames.hpp"
+#include "cmath"
 // #include "spinning_type.hpp"
 // #include "armor_type.hpp"
+
+static int ar_lostline = 3;//普通类的阈值
+static int sp_lostline = 5;//旋转类的阈值
+static int delete_line = 10;
 
 using namespace rm;
 class the_base
@@ -51,7 +56,7 @@ public:
         c0();
     }
     virtual ~the_base() = default;
-    virtual bool track() {};
+    virtual bool track() {return false;}; 
     //这个函数叫预测函数更好
     void compute (double dt)//输入观测时间，
     {
