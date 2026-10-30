@@ -86,7 +86,7 @@ public:
             {
                 if(the_see.type == rm::TargetType::ARMOR)
                 {
-                    armor_type* i = new armor_type(the_see.id,the_see.type);
+                    //armor_type* i = new armor_type(the_see.id,the_see.type);
                     i->update(the_see , next_frame.timestamp_ns);
                     all_targets.push_back(i);
                     all_armor.push_back(i);
