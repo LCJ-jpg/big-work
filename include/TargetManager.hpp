@@ -5,6 +5,7 @@
 #include "armor_type.hpp"
 #include "spinning_type.hpp"
 #include "algorithm"
+#include "memory"
 
 using namespace rm;
 class TargetManager 
@@ -13,9 +14,9 @@ private:
     InputFrame next_frame;
     InputFrame suc_frame = {-1,-1,{}};
     Result _res = {false,suc_frame.frame_id,{},0,0,0,0};
-    std::vector<the_base*> all_targets;
-    std::vector<armor_type*> all_armor;
-    std::vector<spinning_type*> all_spin;
+    std::vector<std::shared_ptr<the_base>> all_targets;
+    std::vector<std::shared_ptr<armor_type>> all_armor;
+    std::vector<std::shared_ptr<spinning_type>> all_spin;//智能指针防止new之后内存泄漏，不用unique——ptr因为不方便放入数组
 public:
     void get_frame(const InputFrame &a_frame)//录入帧
     {
@@ -42,7 +43,7 @@ public:
         }//重复编号
         for (const auto &the_see : next_frame.observations)
         {
-            for (the_base* t : all_targets)
+            for (auto& t : all_targets)
             {
                 if(t->get_base_id() == the_see.id)
                 {
@@ -54,7 +55,7 @@ public:
             }
         }//类型不匹配
         double dt = ( next_frame.timestamp_ns - suc_frame.timestamp_ns ) / 1e9;
-        for (the_base* t : all_targets)
+        for (auto& t : all_targets)
         {
             bool whether_see = false; 
             for(int i = 0;i < tem.size();i++)
@@ -73,7 +74,7 @@ public:
         for (const auto &the_see : next_frame.observations)
         {
             bool judge = true;
-            for (the_base* t : all_targets)
+            for (auto& t : all_targets)
             {
                 if(t->get_base_id() == the_see.id)
                 {
@@ -86,21 +87,21 @@ public:
             {
                 if(the_see.type == rm::TargetType::ARMOR)
                 {
-                    //armor_type* i = new armor_type(the_see.id,the_see.type);
+                    std::shared_ptr<armor_type> i (new armor_type(the_see.id,the_see.type));//防止内存泄漏
                     i->update(the_see , next_frame.timestamp_ns);
                     all_targets.push_back(i);
                     all_armor.push_back(i);
                 }
                 if(the_see.type == rm::TargetType::SPINNING)
                 {
-                    spinning_type* i = new spinning_type(the_see.id,the_see.type);
+                    std::shared_ptr<spinning_type> i (new spinning_type(the_see.id,the_see.type));//防止内存泄漏
                     i->update(the_see , next_frame.timestamp_ns);
                     all_targets.push_back(i);
                     all_spin.push_back(i);
                 }            
             }
         }//预测 
-        for (the_base* t : all_targets)
+        for (auto& t : all_targets)
         {
             t->compute(dt);
         }
@@ -130,7 +131,7 @@ public:
             _res.targets.clear();
             int track_cnt = 0;
             int lost_cnt = 0;
-            for(the_base* t : all_targets)
+            for(auto& t : all_targets)
             {
                 if(t->get_status() == rm::TargetStatus::LOST)
                 {
